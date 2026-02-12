@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from core.jobs import UserSession
+from backend.core.jobs import UserSession
 
 
 def session_from_email(email: str | None) -> UserSession:

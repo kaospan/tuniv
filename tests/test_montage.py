@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from montage.assembler import Timeline, TimelineItem
-from montage.clip_plan import TimelineSegment
-from providers.mock_provider import GeneratedClip
+from backend.montage.assembler import Timeline, TimelineItem
+from backend.montage.clip_plan import TimelineSegment
+from backend.providers.mock_provider import GeneratedClip
 
 
 def test_montage_duration():

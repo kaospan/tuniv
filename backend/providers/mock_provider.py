@@ -4,8 +4,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List
 
-from montage.clip_plan import TimelinePlan, TimelineSegment
-from renderer.mock_clip import render_clip
+from backend.montage.clip_plan import TimelinePlan, TimelineSegment
+from backend.renderer.mock_clip import render_clip
 
 
 @dataclass

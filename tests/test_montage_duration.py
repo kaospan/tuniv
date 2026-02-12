@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from montage.assembler import MontageAssembler
-from montage.clip_plan import plan_timeline
-from providers.mock_provider import GeneratedClip
+from backend.montage.assembler import MontageAssembler
+from backend.montage.clip_plan import plan_timeline
+from backend.providers.mock_provider import GeneratedClip
 
 
 def test_montage_duration_matches_audio() -> None:

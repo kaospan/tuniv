@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List
 
-from montage.clip_plan import TimelinePlan, TimelineSegment
-from providers.mock_provider import GeneratedClip
+from backend.montage.clip_plan import TimelinePlan, TimelineSegment
+from backend.providers.mock_provider import GeneratedClip
 
 
 @dataclass

@@ -4,7 +4,7 @@ import shutil
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from core.config import settings
+from backend.core.config import settings
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 STORAGE_DIR = BASE_DIR / "storage"

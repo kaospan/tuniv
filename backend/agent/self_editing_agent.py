@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, List, Tuple
 
-from montage.assembler import Timeline, TimelineItem
-from providers.mock_provider import MockVideoProvider
+from backend.montage.assembler import Timeline, TimelineItem
+from backend.providers.mock_provider import MockVideoProvider
 
 
 @dataclass

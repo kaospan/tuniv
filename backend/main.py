@@ -7,16 +7,16 @@ from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFi
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from core.auth import session_from_email
-from core.config import settings
-from core.jobs import JobRequest
-from core.jobs import store
-from core.queue import executor
-from core.rate_limit import SlidingWindowLimiter
-from core.security import create_signed_token, verify_signed_token
-from core.storage import job_dir
-from models.schemas import AuthRequest, AuthResponse, JobCreateResponse, JobDetailResponse
-from pipeline import run_job
+from backend.core.auth import session_from_email
+from backend.core.config import settings
+from backend.core.jobs import JobRequest
+from backend.core.jobs import store
+from backend.core.queue import executor
+from backend.core.rate_limit import SlidingWindowLimiter
+from backend.core.security import create_signed_token, verify_signed_token
+from backend.core.storage import job_dir
+from backend.models.schemas import AuthRequest, AuthResponse, JobCreateResponse, JobDetailResponse
+from backend.pipeline import run_job
 
 app = FastAPI(title=settings.app_name, version=settings.app_version)
 
@@ -24,7 +24,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.allowed_origin],
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type", "X-User-Email"],
 )
 

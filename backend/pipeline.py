@@ -2,18 +2,18 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from agent.self_editing_agent import SelfEditingAgent
-from analysis.audio import analyze_audio
-from analysis.lyrics import summarize_lyrics
-from core.jobs import JobRequest
-from core.jobs import store
-from core.storage import job_dir
-from core.storage import schedule_retention_expiry
-from ledger.credits import CreditsLedger
-from montage.assembler import MontageAssembler
-from montage.clip_plan import plan_timeline
-from providers.mock_provider import MockVideoProvider
-from renderer.exporter import render_timeline
+from backend.agent.self_editing_agent import SelfEditingAgent
+from backend.analysis.audio import analyze_audio
+from backend.analysis.lyrics import summarize_lyrics
+from backend.core.jobs import JobRequest
+from backend.core.jobs import store
+from backend.core.storage import job_dir
+from backend.core.storage import schedule_retention_expiry
+from backend.ledger.credits import CreditsLedger
+from backend.montage.assembler import MontageAssembler
+from backend.montage.clip_plan import plan_timeline
+from backend.providers.mock_provider import MockVideoProvider
+from backend.renderer.exporter import render_timeline
 
 
 def run_job(job_id: str, req: JobRequest, audio_path: Path) -> None:

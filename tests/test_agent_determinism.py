@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from agent.self_editing_agent import SelfEditingAgent
-from montage.assembler import MontageAssembler
-from montage.clip_plan import plan_timeline
-from providers.mock_provider import GeneratedClip
+from backend.agent.self_editing_agent import SelfEditingAgent
+from backend.montage.assembler import MontageAssembler
+from backend.montage.clip_plan import plan_timeline
+from backend.providers.mock_provider import GeneratedClip
 
 
 def _build_timeline():
