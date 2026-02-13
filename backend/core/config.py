@@ -23,7 +23,7 @@ class Settings:
     allowed_origins: tuple[str, ...] = _split_origins(
         os.getenv(
             "TUNIVO_ALLOWED_ORIGIN",
-            "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174",
+            "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174,https://kaospan.github.io",
         )
     )
     hmac_secret: str = os.getenv("TUNIVO_HMAC_SECRET", "tunivo-dev-secret")
