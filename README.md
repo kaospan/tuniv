@@ -58,7 +58,7 @@ bun run deploy
 ```
 
 ### Environment Variables
-- `TUNIVO_ALLOWED_ORIGIN` (default `http://localhost:5173,http://localhost:5174`)
+- `TUNIVO_ALLOWED_ORIGIN` (default `http://localhost:5173,http://localhost:5174,https://kaospan.github.io`)
 - `TUNIVO_HMAC_SECRET` (default `tunivo-dev-secret`)
 - `TUNIVO_RETENTION_HOURS` (default `2`)
 - `TUNIVO_RATE_LIMIT` (default `6`)

@@ -8,10 +8,8 @@ export default function NotFound() {
         <AlertCircle className="h-16 w-16 text-destructive" />
         <h1 className="text-4xl font-display font-bold">404 Page Not Found</h1>
         <p className="text-muted-foreground">The page you're looking for doesn't exist.</p>
-        <Link href="/">
-          <a className="mt-4 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">
-            Return Home
-          </a>
+        <Link href="/" className="mt-4 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">
+          Return Home
         </Link>
       </div>
     </div>

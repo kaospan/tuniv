@@ -1,114 +1,231 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, buildUrl } from "@shared/routes";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-// List all projects
+type Mode = "fast" | "high";
+type Aspect = "16:9" | "9:16" | "1:1";
+
+type BackendJob = {
+  id: string;
+  status: string;
+  progress: number;
+  message: string;
+  report: Record<string, unknown>;
+  plan: string;
+  download_url?: string | null;
+};
+
+export type AgentIteration = {
+  total: number;
+  relevance: number;
+  continuity: number;
+  variety: number;
+  pacing: number;
+  technical: number;
+  issues?: Array<{ segment_index: number; reason: string; severity: string }>;
+};
+
+export type ClientProject = {
+  id: string;
+  createdAt: number;
+  title: string;
+  prompt: string;
+  lyrics: string;
+  mode: Mode;
+  aspect: Aspect;
+  autoTranscribe: boolean;
+  userEmail: string;
+  status: string;
+  progress: number;
+  message: string;
+  plan: string;
+  report?: Record<string, unknown>;
+  downloadUrl?: string | null;
+};
+
+export type CreateProjectInput = {
+  audio: File;
+  title?: string;
+  prompt: string;
+  lyrics: string;
+  mode: Mode;
+  aspect: Aspect;
+  autoTranscribe: boolean;
+};
+
+const STORAGE_KEY = "tunivo_client_projects_v1";
+const EMAIL_KEY = "tunivo_client_email_v1";
+const PLAN_KEY = "tunivo_client_plan_v1";
+
+const API_BASE = import.meta.env.DEV ? "" : (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+
+function api(path: string): string {
+  return `${API_BASE}${path}`;
+}
+
+function loadProjects(): ClientProject[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as ClientProject[];
+    if (!Array.isArray(parsed)) return [];
+    return parsed;
+  } catch {
+    return [];
+  }
+}
+
+function saveProjects(projects: ClientProject[]): void {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+}
+
+function upsertProject(project: ClientProject): void {
+  const projects = loadProjects();
+  const next = [project, ...projects.filter((p) => p.id !== project.id)];
+  saveProjects(next);
+}
+
+function removeProject(projectId: string): void {
+  saveProjects(loadProjects().filter((p) => p.id !== projectId));
+}
+
+function getProject(projectId: string): ClientProject | null {
+  return loadProjects().find((p) => p.id === projectId) || null;
+}
+
+function mapBackendToProject(existing: ClientProject, latest: BackendJob): ClientProject {
+  return {
+    ...existing,
+    status: latest.status,
+    progress: latest.progress,
+    message: latest.message,
+    plan: latest.plan,
+    report: latest.report,
+    downloadUrl: latest.download_url ? api(latest.download_url) : null,
+  };
+}
+
+export function getCurrentEmail(): string {
+  return localStorage.getItem(EMAIL_KEY) || "demo@tunivo.local";
+}
+
+export function getCurrentPlan(): string {
+  return localStorage.getItem(PLAN_KEY) || "free";
+}
+
+export async function login(email: string): Promise<{ email: string; plan: string }> {
+  const res = await fetch(api("/api/auth/login"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) {
+    throw new Error("Login failed");
+  }
+  const data = (await res.json()) as { email: string; plan: string };
+  localStorage.setItem(EMAIL_KEY, data.email);
+  localStorage.setItem(PLAN_KEY, data.plan);
+  return data;
+}
+
 export function useProjects() {
   return useQuery({
-    queryKey: [api.projects.list.path],
+    queryKey: ["projects"],
     queryFn: async () => {
-      const res = await fetch(api.projects.list.path, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch projects");
-      return api.projects.list.responses[200].parse(await res.json());
+      const projects = loadProjects().sort((a, b) => b.createdAt - a.createdAt);
+      return projects;
     },
   });
 }
 
-// Get single project with polling
-export function useProject(id: number) {
+export function useProject(projectId: string) {
   return useQuery({
-    queryKey: [api.projects.get.path, id],
+    queryKey: ["project", projectId],
     queryFn: async () => {
-      const url = buildUrl(api.projects.get.path, { id });
-      const res = await fetch(url, { credentials: "include" });
-      if (res.status === 404) throw new Error("Project not found");
-      if (!res.ok) throw new Error("Failed to fetch project");
-      return api.projects.get.responses[200].parse(await res.json());
+      const existing = getProject(projectId);
+      if (!existing) {
+        throw new Error("Project not found");
+      }
+
+      try {
+        const res = await fetch(api(`/api/jobs/${projectId}`), {
+          headers: { "X-User-Email": existing.userEmail || getCurrentEmail() },
+        });
+        if (!res.ok) {
+          return existing;
+        }
+        const latest = (await res.json()) as BackendJob;
+        const merged = mapBackendToProject(existing, latest);
+        upsertProject(merged);
+        return merged;
+      } catch {
+        return existing;
+      }
     },
-    // Poll every 2s if processing/pending, otherwise stop
     refetchInterval: (query) => {
-      const data = query.state.data;
-      if (!data) return false;
-      const activeStates = ['pending', 'analyzing', 'generating', 'rendering', 'ready_to_render'];
-      return activeStates.includes(data.status) ? 2000 : false;
+      const project = query.state.data;
+      if (!project) return false;
+      return project.status === "completed" || project.status === "failed" ? false : 1500;
     },
   });
 }
 
-// Create project (Handling FormData)
 export function useCreateProject() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (formData: FormData) => {
-      const res = await fetch(api.projects.create.path, {
+    mutationFn: async (input: CreateProjectInput) => {
+      const email = getCurrentEmail();
+      const formData = new FormData();
+      formData.append("audio", input.audio);
+      formData.append("prompt", input.prompt);
+      formData.append("lyrics", input.lyrics);
+      formData.append("mode", input.mode);
+      formData.append("aspect_ratio", input.aspect);
+      formData.append("auto_transcribe", String(input.autoTranscribe));
+
+      const res = await fetch(api("/api/jobs"), {
         method: "POST",
+        headers: { "X-User-Email": email },
         body: formData,
-        credentials: "include",
       });
-      
+
       if (!res.ok) {
-        if (res.status === 400) {
-          const error = api.projects.create.responses[400].parse(await res.json());
-          throw new Error(error.message);
-        }
-        throw new Error("Failed to create project");
+        const payload = await res.json().catch(() => ({}));
+        throw new Error((payload as { detail?: string }).detail || "Failed to create job");
       }
-      const data = await res.json();
-      return data;
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.projects.list.path] }),
-  });
-}
 
-// Generate clips
-export function useGenerateVideo() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (projectId: number) => {
-      const url = buildUrl(api.projects.generate.path, { id: projectId });
-      const res = await fetch(url, {
-        method: "POST",
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to start generation");
-      return res.json();
+      const data = (await res.json()) as { id: string };
+      const initial: ClientProject = {
+        id: data.id,
+        createdAt: Date.now(),
+        title: input.title?.trim() || input.audio.name,
+        prompt: input.prompt,
+        lyrics: input.lyrics,
+        mode: input.mode,
+        aspect: input.aspect,
+        autoTranscribe: input.autoTranscribe,
+        userEmail: email,
+        status: "queued",
+        progress: 0.02,
+        message: "Queued",
+        plan: getCurrentPlan(),
+      };
+      upsertProject(initial);
+      return initial;
     },
-    onSuccess: (_, projectId) => {
-      queryClient.invalidateQueries({ queryKey: [api.projects.get.path, projectId] });
-    },
-  });
-}
-
-// Render final video
-export function useRenderVideo() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (projectId: number) => {
-      const url = buildUrl(api.projects.render.path, { id: projectId });
-      const res = await fetch(url, {
-        method: "POST",
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to start rendering");
-      return res.json();
-    },
-    onSuccess: (_, projectId) => {
-      queryClient.invalidateQueries({ queryKey: [api.projects.get.path, projectId] });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
   });
 }
 
-// Delete project
 export function useDeleteProject() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (id: number) => {
-      const url = buildUrl(api.projects.delete.path, { id });
-      const res = await fetch(url, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to delete project");
+    mutationFn: async (id: string) => {
+      removeProject(id);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.projects.list.path] }),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["project", id] });
+    },
   });
 }
