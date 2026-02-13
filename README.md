@@ -2,6 +2,14 @@
 
 Investor-grade music-to-video montage app with a self-editing agent.
 
+## Status
+[![CI](https://github.com/kaospan/tuniv/actions/workflows/ci.yml/badge.svg)](https://github.com/kaospan/tuniv/actions/workflows/ci.yml)
+[![Deploy Frontend to GitHub Pages](https://github.com/kaospan/tuniv/actions/workflows/pages.yml/badge.svg)](https://github.com/kaospan/tuniv/actions/workflows/pages.yml)
+[![Site](https://img.shields.io/badge/site-live-2ea44f?logo=githubpages&logoColor=white)](https://kaospan.github.io/tuniv/)
+
+## Production
+- Live site: `https://kaospan.github.io/tuniv/`
+
 ## Features
 - Upload a song, optional visual prompt, and optional lyrics.
 - Generates a full-length montage aligned to song duration.
@@ -26,9 +34,8 @@ uvicorn backend.main:app --reload --port 8000
 
 ### Frontend
 ```bash
-cd frontend
 bun install
-bun run dev
+bun run --cwd frontend dev
 ```
 
 ### Root Bun Scripts
@@ -38,12 +45,20 @@ bun run build
 bun run deploy
 ```
 
-Open `http://localhost:5173`.
+Open `http://localhost:5173/tuniv/`.
 
 Set `VITE_API_URL` if the API runs on a different host/port.
 
+### Deploy
+- Automatic: pushing to `main` runs `.github/workflows/pages.yml` and deploys to GitHub Pages.
+- Manual from local machine:
+```bash
+bun run build
+bun run deploy
+```
+
 ### Environment Variables
-- `TUNIVO_ALLOWED_ORIGIN` (default `http://localhost:5173`)
+- `TUNIVO_ALLOWED_ORIGIN` (default `http://localhost:5173,http://localhost:5174`)
 - `TUNIVO_HMAC_SECRET` (default `tunivo-dev-secret`)
 - `TUNIVO_RETENTION_HOURS` (default `2`)
 - `TUNIVO_RATE_LIMIT` (default `6`)
