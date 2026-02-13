@@ -5,8 +5,8 @@
   "private": true,
   "scripts": {
     "dev:backend": "python -m uvicorn backend.main:app --reload --port 8000",
-    "dev:frontend": "npm --prefix frontend run dev -- --host 0.0.0.0 --port 5173",
-    "dev": "concurrently -n backend,frontend -c green,blue \"npm run dev:backend\" \"npm run dev:frontend\""
+    "dev:frontend": "bun --cwd frontend run dev --host 0.0.0.0 --port 5173",
+    "dev": "concurrently -n backend,frontend -c green,blue \"bun run dev:backend\" \"bun run dev:frontend\""
   },
   "devDependencies": {
     "@types/bun": "latest",

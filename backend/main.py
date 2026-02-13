@@ -22,7 +22,8 @@ app = FastAPI(title=settings.app_name, version=settings.app_version)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.allowed_origin],
+    allow_origins=list(settings.allowed_origins),
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type", "X-User-Email"],
