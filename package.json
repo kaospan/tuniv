@@ -9,7 +9,7 @@
     "dev": "concurrently -n backend,frontend -c green,blue \"bun run dev:backend\" \"bun run dev:frontend\"",
     "build": "bun run --cwd frontend build",
     "predeploy": "bun run build",
-    "deploy": "gh-pages -d frontend/dist -r origin -b gh-pages"
+    "deploy": "gh-pages -d frontend/dist -b gh-pages"
   },
   "devDependencies": {
     "@types/bun": "latest",
