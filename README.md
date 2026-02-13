@@ -31,6 +31,13 @@ bun install
 bun run dev
 ```
 
+### Root Bun Scripts
+```bash
+bun run dev
+bun run build
+bun run deploy
+```
+
 Open `http://localhost:5173`.
 
 Set `VITE_API_URL` if the API runs on a different host/port.
