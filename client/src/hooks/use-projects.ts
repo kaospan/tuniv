@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 
 type Mode = "fast" | "high";
 type Aspect = "16:9" | "9:16" | "1:1";
@@ -54,12 +55,6 @@ export type CreateProjectInput = {
 const STORAGE_KEY = "tunivo_client_projects_v1";
 const EMAIL_KEY = "tunivo_client_email_v1";
 const PLAN_KEY = "tunivo_client_plan_v1";
-
-const API_BASE = import.meta.env.DEV ? "" : (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
-
-function api(path: string): string {
-  return `${API_BASE}${path}`;
-}
 
 function loadProjects(): ClientProject[] {
   try {
