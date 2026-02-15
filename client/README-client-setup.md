@@ -33,7 +33,7 @@ This guide explains how to run the Tuniv client locally and build it for GitHub 
    npm run dev
    ```
 
-5. Open your browser to `http://localhost:5176`
+5. Open your browser to `http://localhost:5173`
 
 ## Building for GitHub Pages
 

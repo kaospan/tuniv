@@ -29,7 +29,7 @@ Investor-grade music-to-video montage app with a self-editing agent.
 python -m venv .venv
 . .venv/Scripts/activate
 pip install -r backend/requirements.txt
-uvicorn backend.main:app --reload --port 8000
+uvicorn backend.main:app --reload --port 8080
 ```
 
 ### Frontend
