@@ -17,5 +17,5 @@
       "@/*": ["src/*"]
     }
   },
-  "files": ["src/main.tsx"]
+  "files": ["src/main.tsx", "src/vite-env.d.ts"]
 }
