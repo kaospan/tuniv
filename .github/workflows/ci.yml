@@ -22,16 +22,16 @@ jobs:
         run: |
           pytest -q
 
-  frontend:
+  client:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      - name: Install frontend deps
+      - name: Install client deps
         run: |
-          bun install --cwd frontend
-      - name: Build frontend
+          bun install --cwd client
+      - name: Build client
         run: |
-          bun run --cwd frontend build
+          bun run --cwd client build

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import shutil
+import uuid
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFile
@@ -15,10 +16,27 @@ from backend.core.queue import executor
 from backend.core.rate_limit import SlidingWindowLimiter
 from backend.core.security import create_signed_token, verify_signed_token
 from backend.core.storage import job_dir
-from backend.models.schemas import AuthRequest, AuthResponse, JobCreateResponse, JobDetailResponse
+from backend.models.schemas import (
+    AuthRequest,
+    AuthResponse,
+    CleanupPresetItem,
+    JobCreateResponse,
+    JobDetailResponse,
+    SongLibraryResponse,
+)
 from backend.pipeline import run_job
+from backend.services.song_library import list_songs, resolve_song_path
+from backend.services.video_cleanup import available_presets, cleanup_video_file
+from backend.utils.logging import get_logger
+from backend.utils.validation import (
+    safe_filename,
+    validate_audio_content_type,
+    validate_mode,
+    validate_video_content_type,
+)
 
 app = FastAPI(title=settings.app_name, version=settings.app_version)
+logger = get_logger(__name__)
 
 app.add_middleware(
     CORSMiddleware,
@@ -41,7 +59,8 @@ async def login(payload: AuthRequest) -> AuthResponse:
 @app.post("/api/jobs", response_model=JobCreateResponse)
 async def create_job(
     request: Request,
-    audio: UploadFile = File(...),
+    audio: UploadFile | None = File(None),
+    song_id: str = Form(""),
     prompt: str = Form(""),
     lyrics: str = Form(""),
     mode: str = Form("fast"),
@@ -54,11 +73,19 @@ async def create_job(
     if not limiter.allow(session.email):
         raise HTTPException(status_code=429, detail="rate_limited")
 
-    if mode not in {"fast", "high"}:
-        raise HTTPException(status_code=400, detail="mode must be fast or high")
+    try:
+        validate_mode(mode)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    if audio.content_type not in {"audio/mpeg", "audio/wav", "audio/x-wav", "audio/aac", "audio/mp4"}:
-        raise HTTPException(status_code=400, detail="unsupported audio format")
+    if not audio and not song_id.strip():
+        raise HTTPException(status_code=422, detail="provide audio file or song_id")
+
+    if audio:
+        try:
+            validate_audio_content_type(audio.content_type)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     req = JobRequest(
         prompt=prompt,
@@ -70,10 +97,25 @@ async def create_job(
 
     job = store.create(session)
     workdir = job_dir(job.id)
-    audio_path = workdir / "input" / (audio.filename or "track.mp3")
+    audio_path = workdir / "input" / "track.mp3"
     audio_path.parent.mkdir(parents=True, exist_ok=True)
-    with audio_path.open("wb") as f:
-        shutil.copyfileobj(audio.file, f)
+
+    if audio:
+        audio_name = safe_filename(audio.filename, "track.mp3")
+        audio_path = workdir / "input" / audio_name
+        with audio_path.open("wb") as f:
+            shutil.copyfileobj(audio.file, f)
+    else:
+        try:
+            source_song = resolve_song_path(song_id)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        audio_path = workdir / "input" / safe_filename(source_song.name, "track.mp3")
+        shutil.copy2(source_song, audio_path)
+
+    logger.info("queued job %s for %s", job.id, session.email)
 
     executor.submit(run_job, job.id, req, audio_path)
     return JobCreateResponse(id=job.id)
@@ -117,6 +159,46 @@ async def download_job(job_id: str, token: str = Query(...)) -> FileResponse:
         raise HTTPException(status_code=404, detail="render not ready")
 
     return FileResponse(job.result_path, filename=f"tunivo-{job_id}.mp4", media_type="video/mp4")
+
+
+@app.get("/api/library/songs", response_model=SongLibraryResponse)
+async def get_song_library() -> SongLibraryResponse:
+    return SongLibraryResponse(songs=list_songs())
+
+
+@app.get("/api/videos/cleanup/presets", response_model=list[CleanupPresetItem])
+async def get_cleanup_presets() -> list[CleanupPresetItem]:
+    return [CleanupPresetItem(**item) for item in available_presets()]
+
+
+@app.post("/api/videos/cleanup")
+async def cleanup_video(
+    video: UploadFile = File(...),
+    preset: str = Form(""),
+) -> FileResponse:
+    try:
+        validate_video_content_type(video.content_type)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    cleanup_job_id = f"cleanup-{uuid.uuid4().hex}"
+    workdir = job_dir(cleanup_job_id)
+    input_path = workdir / "input" / safe_filename(video.filename, "input.mp4")
+    output_path = workdir / "output" / "cleaned.mp4"
+
+    input_path.parent.mkdir(parents=True, exist_ok=True)
+    with input_path.open("wb") as f:
+        shutil.copyfileobj(video.file, f)
+
+    try:
+        cleaned_path = cleanup_video_file(input_path, output_path, preset)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except (FileNotFoundError, RuntimeError) as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    logger.info("cleanup completed for %s", cleanup_job_id)
+    return FileResponse(cleaned_path, media_type="video/mp4", filename=f"tunivo-cleaned-{cleanup_job_id}.mp4")
 
 
 @app.get("/api/health")

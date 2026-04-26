@@ -8,6 +8,8 @@ from dataclasses import dataclass
 class CreditsReservation:
     job_id: str
     amount: int
+    reserved_amount: int | None = None
+    actual_amount: int | None = None
     committed: bool = False
 
 
@@ -32,18 +34,23 @@ class CreditsLedger:
                 return existing
             if amount > self.allowance:
                 raise ValueError("insufficient_credits")
-            reservation = CreditsReservation(job_id=job_id, amount=amount)
+            reservation = CreditsReservation(job_id=job_id, amount=amount, reserved_amount=amount)
             self._reservations[job_id] = reservation
             return reservation
 
-    def commit_credits(self, job_id: str) -> CreditsReservation:
+    def commit_credits(self, job_id: str, actual_amount: int | None = None) -> CreditsReservation:
         with self._lock:
             reservation = self._reservations.get(job_id)
             if not reservation:
                 raise ValueError("missing_reservation")
             if reservation.committed:
                 return reservation
-            self.allowance -= reservation.amount
+            amount_to_commit = reservation.amount if actual_amount is None else max(0, int(actual_amount))
+            if amount_to_commit > self.allowance:
+                raise ValueError("insufficient_credits")
+            self.allowance -= amount_to_commit
+            reservation.amount = amount_to_commit
+            reservation.actual_amount = amount_to_commit
             reservation.committed = True
             return reservation
 

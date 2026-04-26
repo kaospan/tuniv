@@ -4,19 +4,13 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev:backend": "python -m uvicorn main:app --reload --port 8080 --app-dir D:/tuniv-backend",
-    "dev:frontend": "bun run --cwd frontend dev -- --host 0.0.0.0 --port 5173",
-    "dev:client": "bun run --cwd client dev -- --host 0.0.0.0 --port 5173",
-    "web:use:frontend": "node scripts/web-app-switch.mjs frontend",
-    "web:use:client": "node scripts/web-app-switch.mjs client",
-    "dev:web": "node scripts/web-app-run.mjs dev",
-    "build:web": "node scripts/web-app-run.mjs build",
-    "dev": "concurrently -n backend,web -c green,blue \"bun run dev:backend\" \"bun run dev:web\"",
-    "build": "bun run build:web",
+    "dev:backend": "python -m uvicorn backend.main:app --reload --port 8000 --app-dir .",
+    "dev:client": "bun run --cwd client dev -- --host 0.0.0.0 --port 5176",
+    "dev": "concurrently -n backend,client -c green,blue \"bun run dev:backend\" \"bun run dev:client\"",
+    "build": "bun run --cwd client build",
     "build:client": "bun run --cwd client build",
-    "build:frontend": "bun run --cwd frontend build",
     "predeploy": "bun run build",
-    "deploy": "node scripts/web-app-deploy.mjs"
+    "deploy": "bun x gh-pages -d client/dist -b gh-pages"
   },
   "devDependencies": {
     "@types/bun": "latest",

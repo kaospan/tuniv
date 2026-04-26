@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import threading
 import uuid
-from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Dict, Optional
 
 from pydantic import BaseModel, Field
@@ -43,7 +42,7 @@ class JobStore:
 
     def create(self, session: UserSession) -> JobStatus:
         job_id = str(uuid.uuid4())
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         job = JobStatus(
             id=job_id,
             user_email=session.email,
@@ -67,7 +66,7 @@ class JobStore:
                 return None
             payload = current.model_dump()
             payload.update(updates)
-            payload["updated_at"] = datetime.utcnow()
+            payload["updated_at"] = datetime.now(UTC)
             new_status = JobStatus(**payload)
             self._jobs[job_id] = new_status
             return new_status

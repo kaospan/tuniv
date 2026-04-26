@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"name": "tuniv-backend",
+			"path": "../../tuniv-backend"
+		},
+		{
+			"name": "tuniv",
+			"path": ".."
+		}
+	],
+	"settings": {}
+}

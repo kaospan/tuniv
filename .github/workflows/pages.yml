@@ -1,4 +1,4 @@
-name: Deploy Frontend to GitHub Pages
+name: Deploy Client to GitHub Pages
 
 on:
   push:
@@ -25,14 +25,14 @@ jobs:
           bun-version: latest
       - name: Install deps
         run: |
-          bun install --cwd frontend
+          bun install --cwd client
       - name: Build
         run: |
-          bun run --cwd frontend build
+          bun run --cwd client build
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: frontend/dist
+          path: client/dist
 
   deploy:
     runs-on: ubuntu-latest

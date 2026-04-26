@@ -31,3 +31,20 @@ class JobDetailResponse(BaseModel):
 class LedgerPreview(BaseModel):
     estimated_credits: int
     plan: str
+
+
+class SongLibraryItem(BaseModel):
+    id: str
+    filename: str
+    bytes: int
+    modified_at: str
+
+
+class SongLibraryResponse(BaseModel):
+    songs: list[SongLibraryItem]
+
+
+class CleanupPresetItem(BaseModel):
+    value: str
+    label: str
+    description: str
